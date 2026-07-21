@@ -1083,8 +1083,10 @@
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(txt).then(done).catch(() => fallbackCopy(txt, done));
     } else fallbackCopy(txt, done);
-    // count as a contact touch
+    // count as a contact touch — mirror markCalled so any visible stat/order
+    // (e.g. dashboard "Calls Today") refreshes instead of going stale.
     l.lastContacted = todayStr(); save();
+    if (ui.view === "dashboard") renderDashboard();
   }
   function fallbackCopy(text, done) {
     const ta = document.createElement("textarea");
@@ -1247,7 +1249,10 @@
       added++;
     }
     save(); renderAll();
-    toast(`Imported ${added} lead${added === 1 ? "" : "s"}${skipped ? `, skipped ${skipped} duplicate${skipped === 1 ? "" : "s"}` : ""}.`, "success", 4500);
+    // A snapshot was taken above; surface an Undo so a mistaken import (wrong file,
+    // unwanted merge) can be reverted — consistent with bulk delete / restore.
+    const summary = `Imported ${added} lead${added === 1 ? "" : "s"}${skipped ? `, skipped ${skipped} duplicate${skipped === 1 ? "" : "s"}` : ""}.`;
+    if (added > 0) offerUndo(summary); else toast(summary, "success", 4500);
   }
 
   /** Tiny robust CSV parser (handles quotes, commas, newlines in quotes). */
@@ -1477,18 +1482,15 @@
     toast("Admin locked.", "info");
   }
   function noteActivity() { lastAdminActivity = Date.now(); }
-  function startAdminTimer() { stopAdminTimer(); adminTimer = setInterval(checkAdminTimeout, 30 * 1000); }
+  // Admin lock was removed by the owner (adminUnlock/confirmSensitive are no-ops and
+  // adminUnlocked starts true). The idle auto-lock used to re-lock the admin area after
+  // ~15 min of normal use — because everyday actions (calling, browsing) never call
+  // noteActivity(), only settings interactions do. That resurrected the very lock the
+  // owner removed, forcing a needless "Unlock admin settings" click. With the lock
+  // removed, the idle timer must NOT run and checkAdminTimeout must never re-lock.
+  function startAdminTimer() { stopAdminTimer(); /* auto-lock disabled: lock removed by owner */ }
   function stopAdminTimer() { if (adminTimer) { clearInterval(adminTimer); adminTimer = null; } }
-  function checkAdminTimeout() {
-    if (!adminUnlocked) return;
-    const min = config.admin.sessionTimeoutMin;
-    if (min <= 0) return; // 0 = never auto-lock
-    if (Date.now() - lastAdminActivity >= min * 60000) {
-      adminUnlocked = false; stopAdminTimer();
-      toast("Admin locked after inactivity.", "info");
-      if (ui.view === "settings") renderSettings();
-    }
-  }
+  function checkAdminTimeout() { /* no-op: admin lock removed by owner, never auto-lock */ }
   function changePw() {
     const cur = $("#pw_current") ? $("#pw_current").value : "";
     const nw = $("#pw_new") ? $("#pw_new").value : "";
@@ -1688,8 +1690,8 @@
   }
   function aboutHTML() {
     return `<div class="prose">
-      <p><strong>${esc(config.business.name || "LeadDesk")}</strong> — a fast, offline CRM for commission salespeople.</p>
-      <p>Version ${esc(APP_VERSION)} · Runs entirely in your browser · No account, no server, no tracking.</p>
+      <p><strong>${esc(config.business.name || "LeadDesk")}</strong> — a fast CRM for commission salespeople.</p>
+      <p>Version ${esc(APP_VERSION)} · No login · Syncs across your devices · No ads or tracking · Works offline if the cloud is unreachable.</p>
     </div>`;
   }
 
@@ -1979,8 +1981,13 @@
     // search
     $("#globalSearch").addEventListener("input", debounce((e) => {
       ui.search = e.target.value; ui.page = 1;
-      if (ui.view === "dashboard") setView("active"); // searching jumps to a list
-      else renderList();
+      if (ui.view === "dashboard") {
+        setView("active"); // searching jumps to a list
+        // setView focuses #main; give focus back to the search box so the user
+        // can keep typing without the caret being yanked away mid-word.
+        const box = $("#globalSearch");
+        if (box) { box.focus(); const v = box.value; box.value = ""; box.value = v; }
+      } else renderList();
     }, 180));
 
     // filters + sort

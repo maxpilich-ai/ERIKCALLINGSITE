@@ -1,6 +1,6 @@
 # LeadDesk CRM
 
-A fast, offline lead-management CRM for commission salespeople. It runs entirely in the browser — no account, no server, no tracking. All data lives in your browser's `localStorage`, and everything works with the internet turned off.
+A fast lead-management CRM for commission salespeople. It runs entirely in the browser — no login, no build step. All data lives in your browser's `localStorage`. An optional cloud-sync layer (`cloud.js`) mirrors your data to a shared Supabase row so the same book of leads appears across devices; if the cloud can't be reached, the app falls back to running fully offline from `localStorage`.
 
 **Version 2.0.0**
 
@@ -14,13 +14,14 @@ A fast, offline lead-management CRM for commission salespeople. It runs entirely
 - **Follow-ups** — Give a Maybe lead a follow-up date and it returns to Active automatically when due.
 - **Dashboard** — Lifetime and monthly earnings, pipeline value, conversion and close rates, and activity charts.
 - **Search, filter, sort, and bulk actions** across the whole book of business.
-- **Settings & Admin** — Business details and logo, editable packages/prices/commission %, workflow defaults, currency, a password-protected owner area, diagnostics, and a future-ready team section.
+- **Settings & Admin** — Business details and logo, editable packages/prices/commission %, workflow defaults, currency, an owner/admin area, diagnostics, and a future-ready team section.
 - **Backups** — Manual and automatic rotating backups, full export/import (JSON and CSV), and a downloadable backup file.
+- **Cross-device sync** — Optional, no-login cloud sync (`cloud.js`) mirrors your leads and settings across devices via a shared Supabase row, with automatic fallback to fully offline `localStorage` if the cloud can't be reached.
 - **Dark / light theme**, keyboard shortcuts, and a mobile-friendly responsive layout.
 
 ---
 
-## The three files
+## The files
 
 LeadDesk is intentionally a static, no-build site:
 
@@ -28,17 +29,18 @@ LeadDesk is intentionally a static, no-build site:
 lead-crm/
 ├── index.html   the markup and structure
 ├── style.css    all styling (design tokens, light/dark, responsive)
-└── script.js    all behavior (one self-contained module)
+├── script.js    all app behavior (one self-contained module)
+└── cloud.js     optional cross-device sync (loads the Supabase SDK, then boots script.js)
 ```
 
-There is nothing to compile and no dependencies to install.
+There is nothing to compile and no dependencies to install. `cloud.js` loads the Supabase JS SDK from a CDN at runtime; for a purely local, no-network build, edit `index.html` to remove the Supabase SDK and `cloud.js` `<script>` tags and load `script.js` directly instead.
 
 ---
 
 ## Install and host on GitHub Pages
 
 1. Create a new GitHub repository (for example, `leaddesk`).
-2. Upload `index.html`, `style.css`, and `script.js` to the root of the repository (keep the file names exactly as they are — `index.html` must be at the root).
+2. Upload `index.html`, `style.css`, `script.js`, and `cloud.js` to the root of the repository (keep the file names exactly as they are — `index.html` must be at the root).
 3. In the repository, open **Settings → Pages**.
 4. Under **Build and deployment → Source**, choose **Deploy from a branch**.
 5. Select the `main` branch and the `/ (root)` folder, then click **Save**.
@@ -57,7 +59,7 @@ Just open `index.html` in any modern browser — double-click it, or drag it int
 Because data is stored in the browser (not in the files), you can safely replace the code without losing your leads.
 
 1. **Export a backup first** (see below) — always do this before updating.
-2. Replace `index.html`, `style.css`, and `script.js` in your repository with the new versions and commit. GitHub Pages redeploys automatically within a minute.
+2. Replace `index.html`, `style.css`, `script.js`, and `cloud.js` in your repository with the new versions and commit. GitHub Pages redeploys automatically within a minute. (The files share a `?v=` cache-busting tag so browsers pick up updates on reload.)
 3. Reload the CRM in your browser (a hard refresh — Ctrl/⌘ + Shift + R — ensures the new files load).
 
 Your leads and settings remain in place because they live in `localStorage` under keys that don't change between versions. On load, LeadDesk sanitizes and migrates older data automatically, so leads created in earlier versions keep working (older leads simply keep their stored commission; new ones use the package system).
@@ -100,34 +102,30 @@ To move to a new device: on the old device use **Download backup file**, then on
 
 ### Owner / Admin area
 
-Business settings, packages, commission rate, workflow defaults, and security sit behind a password so salespeople can't change them.
+Business settings, packages, commission rate, and workflow defaults live under **Settings → Admin**.
 
-- The first-run password is `admin1234`. **Change it immediately** under **Settings → Admin → Security**.
-- Admin access is stored only in memory, so it re-locks whenever the page reloads, and auto-locks after the inactivity timeout you set.
+- The owner removed the admin password gate, so the admin area opens without a prompt and does not auto-lock. (The password machinery still exists in the code but is inactive; see the audit notes if you want it re-enabled.)
 - Editing package prices or the commission percentage recalculates every existing commission automatically, so the dashboard, reports, and exports always stay in sync.
 
 ---
 
 ## Privacy and data ownership
 
-Everything stays on your device. LeadDesk makes no network requests, uses no cookies or analytics, and sends nothing anywhere. You own your data — which also means backups are your responsibility.
+LeadDesk uses no cookies, ad networks, or third-party analytics. Your data is stored on your device in `localStorage`. If `cloud.js` is included (the default), your leads and settings are also synced to a shared row in your own Supabase project so they follow you across devices — that is a network request to Supabase, under your control. Remove `cloud.js` for a purely local, no-network build. Either way, you own your data, and keeping backups is your responsibility.
 
 ---
 
 ## Development and testing
 
-The app ships with headless (jsdom) test suites covering the core CRM, notes, backups, stress/adversarial cases, and the settings/admin/package system — 154 assertions in total. To run them with Node.js installed:
+The app ships with headless (jsdom) test suites that load the real `index.html` + `script.js` (not a reimplementation) and exercise the core logic, adversarial/breakage cases, and the cloud-sync layer — **107 assertions in total**. Install `jsdom` (`npm install jsdom`) and run them with Node.js from the repo folder:
 
 ```bash
-node qa_dom.js
-node qa_extra.js
-node qa_notes.js
-node qa_backup.js
-node qa_paranoid.js
-node qa_settings.js
+node t_core.js     # 64 — formatters, sanitize, commission math, stats, CSV, filters, config
+node t_break.js    # 29 — corrupt storage, huge datasets, XSS escaping, undo, races, follow-ups
+node qa_cloud.js   # 14 — Supabase hydrate/reconcile, push debounce, offline fallback
 ```
 
-Each prints a `RESULT: N passed, 0 failed` line and exits non-zero on failure.
+`t_core.js` and `t_break.js` load the app through `harness.js`. Each suite prints a `PASSED / FAILED` summary and exits non-zero on failure.
 
 ---
 
