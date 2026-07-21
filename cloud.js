@@ -46,7 +46,7 @@
     if (appStarted) return;
     appStarted = true;
     const s = document.createElement("script");
-    s.src = "script.js";
+    s.src = "script.js?v=3";   // version tag busts stale browser cache on updates
     s.defer = true;
     document.body.appendChild(s);
   }
