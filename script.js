@@ -556,16 +556,32 @@
 
     const padL = 44, padR = 12, padT = 12, padB = 26;
     const w = cssW - padL - padR, h = cssH - padT - padB;
-    const max = Math.max(1, ...values);
 
-    // y gridlines (4)
+    // Build a "nice" y-axis: round the top of the scale up to a clean step so
+    // the labels are distinct, round numbers. Without this, an all-zero (or
+    // very small) data set produced a repeated "1, 1, 1, 0, 0" ladder.
+    const TICKS = 4;
+    const rawMax = Math.max(0, ...values);
+    let step = 0, axisMax = 0;
+    if (rawMax > 0) {
+      const rough = rawMax / TICKS;
+      const pow = Math.pow(10, Math.floor(Math.log10(rough)));
+      const mult = [1, 2, 2.5, 5, 10].find((m) => pow * m >= rough) || 10;
+      step = pow * mult;
+      axisMax = step * TICKS;
+    }
+    const scaleMax = axisMax || 1; // bar-height denominator (never divide by 0)
+
+    // y gridlines
     ctx.strokeStyle = gridCol; ctx.fillStyle = textCol;
     ctx.font = "11px Inter, sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
-    for (let i = 0; i <= 4; i++) {
-      const y = padT + (h * i) / 4;
+    for (let i = 0; i <= TICKS; i++) {
+      const y = padT + (h * i) / TICKS;
       ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + w, y); ctx.stroke(); ctx.globalAlpha = 1;
-      const val = Math.round(max * (1 - i / 4));
-      ctx.fillText(val >= 1000 ? (val / 1000).toFixed(0) + "k" : val, padL - 8, y);
+      // No data → label only the baseline 0 and leave the rest blank, rather
+      // than repeating rounded fractions of 1.
+      const val = step ? step * (TICKS - i) : (i === TICKS ? 0 : null);
+      if (val !== null) ctx.fillText(fmtAxisVal(val), padL - 8, y);
     }
 
     const n = values.length || 1;
@@ -573,7 +589,7 @@
     ctx.textAlign = "center"; ctx.textBaseline = "top";
     values.forEach((v, i) => {
       const x = padL + (w * (i + 0.5)) / n - bw / 2;
-      const bh = (v / max) * h;
+      const bh = (v / scaleMax) * h;
       const y = padT + h - bh;
       const grad = ctx.createLinearGradient(0, y, 0, y + bh);
       grad.addColorStop(0, color); grad.addColorStop(1, color + "aa");
@@ -584,6 +600,15 @@
         ctx.fillStyle = textCol; ctx.fillText(labels[i], padL + (w * (i + 0.5)) / n, padT + h + 6);
       }
     });
+  }
+
+  // Format a y-axis value: whole numbers as-is, thousands as "k".
+  function fmtAxisVal(val) {
+    if (val >= 1000) {
+      const k = val / 1000;
+      return (Number.isInteger(k) ? k.toFixed(0) : k.toFixed(1).replace(/\.0$/, "")) + "k";
+    }
+    return Number.isInteger(val) ? String(val) : String(Math.round(val * 100) / 100);
   }
 
   function roundRect(ctx, x, y, w, h, r) {
