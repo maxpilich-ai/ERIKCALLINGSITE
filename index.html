@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="description" content="LeadDesk CRM — a fast, offline lead management tool for commission salespeople." />
+  <meta name="theme-color" content="#2563eb" />
+  <title>LeadDesk CRM</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📇</text></svg>" />
+</head>
+<body>
+  <!-- Skip link for accessibility -->
+  <a href="#main" class="skip-link">Skip to main content</a>
+
+  <!-- ============ TOP BAR ============ -->
+  <header class="topbar">
+    <button id="navToggle" class="icon-btn nav-toggle" aria-label="Open menu" aria-expanded="false">
+      <span class="hamburger"></span>
+    </button>
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">📇</span>
+      <span class="brand-name">LeadDesk</span>
+    </div>
+
+    <div class="topbar-search">
+      <span class="search-icon" aria-hidden="true">🔍</span>
+      <input id="globalSearch" type="search" placeholder="Search leads…  (press /)"
+             aria-label="Search leads" autocomplete="off" />
+      <kbd class="search-kbd">/</kbd>
+    </div>
+
+    <div class="topbar-actions">
+      <button id="newLeadBtn" class="btn btn-primary btn-new">
+        <span aria-hidden="true">＋</span><span class="btn-label">New Lead</span>
+      </button>
+      <button id="themeToggle" class="icon-btn" aria-label="Toggle dark mode" title="Toggle theme">
+        <span class="theme-icon">🌙</span>
+      </button>
+      <button id="menuBtn" class="icon-btn" aria-label="Data menu" aria-haspopup="true" title="Data & backup">⋯</button>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <!-- ============ SIDEBAR ============ -->
+    <nav class="sidebar" id="sidebar" aria-label="Primary">
+      <ul class="nav-list">
+        <li><button class="nav-item active" data-view="dashboard"><span class="nav-ico">📊</span><span>Dashboard</span></button></li>
+        <li><button class="nav-item" data-view="active"><span class="nav-ico">📞</span><span>Active Leads</span><span class="nav-count" data-count="active">0</span></button></li>
+        <li><button class="nav-item" data-view="maybe"><span class="nav-ico">🤔</span><span>Maybe Queue</span><span class="nav-count" data-count="maybe">0</span></button></li>
+        <li><button class="nav-item" data-view="closed"><span class="nav-ico">🏆</span><span>Closed Deals</span><span class="nav-count" data-count="closed">0</span></button></li>
+        <li><button class="nav-item" data-view="archive"><span class="nav-ico">🗄️</span><span>Archive</span><span class="nav-count" data-count="archive">0</span></button></li>
+        <li><button class="nav-item" data-view="settings"><span class="nav-ico">⚙️</span><span>Settings</span></button></li>
+      </ul>
+      <div class="sidebar-foot">
+        <button class="nav-item small" id="importBtn"><span class="nav-ico">⬆️</span><span>Import</span></button>
+        <button class="nav-item small" id="exportBtn"><span class="nav-ico">⬇️</span><span>Export</span></button>
+        <p class="sidebar-note">Data stays on this device.</p>
+      </div>
+    </nav>
+    <div class="scrim" id="scrim" hidden></div>
+
+    <!-- ============ MAIN ============ -->
+    <main class="main" id="main" tabindex="-1">
+
+      <!-- DASHBOARD VIEW -->
+      <section class="view" id="view-dashboard" data-view="dashboard">
+        <div class="view-head">
+          <h1>Dashboard</h1>
+          <p class="view-sub" id="dashGreeting">Your pipeline at a glance.</p>
+        </div>
+        <div class="stat-grid" id="statGrid" aria-live="polite"></div>
+        <div class="dash-charts">
+          <div class="card chart-card">
+            <div class="card-head"><h2>Earnings (last 12 weeks)</h2></div>
+            <canvas id="earningsChart" height="220" role="img" aria-label="Bar chart of earnings over the last 12 weeks"></canvas>
+          </div>
+          <div class="card chart-card">
+            <div class="card-head"><h2>Pipeline by status</h2></div>
+            <canvas id="statusChart" height="220" role="img" aria-label="Bar chart of leads by status"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIST VIEWS (active / maybe / closed / archive share this shell) -->
+      <section class="view" id="view-list" data-view="list" hidden>
+        <div class="view-head">
+          <h1 id="listTitle">Active Leads</h1>
+          <p class="view-sub" id="listSub"></p>
+        </div>
+
+        <!-- Toolbar: filters + sort -->
+        <div class="toolbar" id="toolbar">
+          <div class="toolbar-row">
+            <select id="filterStatus" class="select" aria-label="Filter by status">
+              <option value="">All statuses</option>
+              <option value="active">Active</option>
+              <option value="maybe">Maybe</option>
+              <option value="closed">Closed (Yes)</option>
+              <option value="archived">Archived (No)</option>
+            </select>
+            <select id="filterCategory" class="select" aria-label="Filter by category"><option value="">All categories</option></select>
+            <select id="filterCity" class="select" aria-label="Filter by city"><option value="">All cities</option></select>
+            <select id="filterFollow" class="select" aria-label="Follow-up filter">
+              <option value="">Any follow-up</option>
+              <option value="due">Needs follow-up</option>
+              <option value="scheduled">Has follow-up date</option>
+            </select>
+            <select id="sortBy" class="select" aria-label="Sort by">
+              <option value="recent">Recently added</option>
+              <option value="oldest">Oldest</option>
+              <option value="az">Alphabetical (A–Z)</option>
+              <option value="commHigh">Highest commission</option>
+              <option value="commLow">Lowest commission</option>
+              <option value="contacted">Recently contacted</option>
+              <option value="follow">Follow-up date</option>
+            </select>
+            <button id="clearFilters" class="btn btn-ghost btn-sm">Clear</button>
+          </div>
+        </div>
+
+        <!-- Bulk action bar (appears when rows selected) -->
+        <div class="bulkbar" id="bulkbar" hidden>
+          <label class="bulk-count"><input type="checkbox" id="selectAll" aria-label="Select all" /> <span id="selCount">0 selected</span></label>
+          <div class="bulk-actions">
+            <button class="btn btn-sm" data-bulk="active">→ Active</button>
+            <button class="btn btn-sm" data-bulk="maybe">→ Maybe</button>
+            <button class="btn btn-sm" data-bulk="archived">Archive</button>
+            <button class="btn btn-sm" data-bulk="export">Export</button>
+            <button class="btn btn-sm btn-danger" data-bulk="delete">Delete</button>
+          </div>
+        </div>
+
+        <div id="leadList" class="lead-list" aria-live="polite"></div>
+
+        <!-- Empty state -->
+        <div class="empty" id="emptyState" hidden>
+          <div class="empty-emoji" aria-hidden="true">🗂️</div>
+          <h3 id="emptyTitle">No leads here yet</h3>
+          <p id="emptyMsg">Add your first lead to get started.</p>
+          <button class="btn btn-primary" id="emptyAdd">＋ Add a lead</button>
+        </div>
+
+        <div class="pager" id="pager" hidden>
+          <button class="btn btn-ghost btn-sm" id="pagePrev">‹ Prev</button>
+          <span id="pageInfo" class="page-info">1 / 1</span>
+          <button class="btn btn-ghost btn-sm" id="pageNext">Next ›</button>
+        </div>
+      </section>
+
+      <!-- SETTINGS VIEW -->
+      <section class="view" id="view-settings" data-view="settings" hidden>
+        <div class="view-head">
+          <h1>Settings</h1>
+          <p class="view-sub">Manage your data, preferences, and business setup.</p>
+        </div>
+        <div class="set-tabs" id="settingsTabs" role="tablist" aria-label="Settings sections">
+          <button class="set-tab active" data-tab="general" role="tab">General</button>
+          <button class="set-tab" data-tab="admin" role="tab">Owner / Admin</button>
+        </div>
+        <div id="settingsBody" class="settings-body"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ ADD / EDIT LEAD MODAL ============ -->
+  <div class="modal-backdrop" id="leadModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <h2 id="modalTitle">Add Lead</h2>
+        <button class="icon-btn" id="modalClose" aria-label="Close">✕</button>
+      </div>
+      <form id="leadForm" novalidate>
+        <input type="hidden" id="f_id" />
+        <div class="form-grid">
+          <div class="field">
+            <label for="f_business">Business name *</label>
+            <input id="f_business" type="text" required maxlength="120" autocomplete="off" />
+            <span class="err" data-for="f_business"></span>
+          </div>
+          <div class="field">
+            <label for="f_phone">Phone *</label>
+            <input id="f_phone" type="tel" required maxlength="30" inputmode="tel" autocomplete="off" />
+            <span class="err" data-for="f_phone"></span>
+          </div>
+          <div class="field">
+            <label for="f_owner">Owner name</label>
+            <input id="f_owner" type="text" maxlength="80" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="f_website">Website</label>
+            <input id="f_website" type="text" maxlength="200" placeholder="none / facebook / example.com" autocomplete="off" />
+            <span class="err" data-for="f_website"></span>
+          </div>
+          <div class="field">
+            <label for="f_category">Category</label>
+            <input id="f_category" type="text" maxlength="60" list="catList" autocomplete="off" />
+            <datalist id="catList"></datalist>
+          </div>
+          <div class="field">
+            <label for="f_package">Package sold</label>
+            <select id="f_package"><option value="">— No package —</option></select>
+            <span class="calc-note" id="f_commissionCalc"></span>
+          </div>
+          <div class="field">
+            <label for="f_address">Address</label>
+            <input id="f_address" type="text" maxlength="160" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="f_city">City</label>
+            <input id="f_city" type="text" maxlength="80" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="f_status">Status</label>
+            <select id="f_status">
+              <option value="active">Active</option>
+              <option value="maybe">Maybe</option>
+              <option value="closed">Closed (Yes)</option>
+              <option value="archived">Archived (No)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f_follow">Next follow-up</label>
+            <input id="f_follow" type="date" />
+          </div>
+          <div class="field">
+            <label for="f_salesperson">Salesperson</label>
+            <input id="f_salesperson" type="text" maxlength="60" autocomplete="off" />
+          </div>
+          <div class="field field-full">
+            <label for="f_notes">Notes</label>
+            <textarea id="f_notes" rows="3" maxlength="2000"></textarea>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-ghost" id="modalCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="modalSave">Save lead</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ DATA MENU SHEET ============ -->
+  <div class="modal-backdrop" id="dataMenu" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Data and backup">
+      <div class="modal-head"><h2>Data &amp; Backup</h2><button class="icon-btn" id="dataClose" aria-label="Close">✕</button></div>
+      <div class="data-actions">
+        <button class="data-btn" id="dm_export"><span>⬇️</span><div><strong>Export data</strong><small>Download a JSON backup of every lead</small></div></button>
+        <button class="data-btn" id="dm_import"><span>⬆️</span><div><strong>Import data</strong><small>Load leads from a JSON or CSV file</small></div></button>
+        <button class="data-btn" id="dm_backup"><span>💾</span><div><strong>Create backup</strong><small>Save a restore point in this browser</small></div></button>
+        <button class="data-btn" id="dm_restore"><span>♻️</span><div><strong>Restore backup</strong><small>Roll back to the last restore point</small></div></button>
+        <button class="data-btn" id="dm_sample"><span>✨</span><div><strong>Load sample leads</strong><small>Try the app with demo data</small></div></button>
+        <button class="data-btn danger" id="dm_clear"><span>🗑️</span><div><strong>Clear all data</strong><small>Remove every lead from this device</small></div></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ NOTES MODAL ============ -->
+  <div class="modal-backdrop" id="notesModal" hidden>
+    <div class="modal notes-modal" role="dialog" aria-modal="true" aria-labelledby="notesTitle">
+      <div class="modal-head">
+        <h2 id="notesTitle">Notes</h2>
+        <button class="icon-btn" id="notesClose" aria-label="Close notes">✕</button>
+      </div>
+      <div class="notes-body">
+        <p class="notes-for" id="notesFor"></p>
+        <textarea id="notesText" rows="10" maxlength="2000"
+          placeholder="Type anything worth remembering — what was discussed, best time to call back, objections, services they want…"
+          aria-label="Lead notes"></textarea>
+        <div class="notes-foot">
+          <span class="notes-status" id="notesStatus" aria-live="polite" role="status"></span>
+          <span class="notes-count" id="notesCount"></span>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-primary" id="notesDone">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PACKAGE SELECTION MODAL ============ -->
+  <div class="modal-backdrop" id="packageModal" hidden>
+    <div class="modal package-modal" role="dialog" aria-modal="true" aria-labelledby="packageTitle">
+      <div class="modal-head">
+        <h2 id="packageTitle">Which package did they buy?</h2>
+        <button class="icon-btn" id="packageClose" aria-label="Cancel">✕</button>
+      </div>
+      <div class="package-body">
+        <p class="package-for" id="packageFor"></p>
+        <div class="pkg-choices" id="packageChoices"></div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" id="packageCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CONFIRM DIALOG ============ -->
+  <div class="modal-backdrop" id="confirmModal" hidden>
+    <div class="confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMsg">
+      <h2 id="confirmTitle">Are you sure?</h2>
+      <p id="confirmMsg">This action cannot be undone.</p>
+      <div class="confirm-foot">
+        <button class="btn btn-ghost" id="confirmNo">Cancel</button>
+        <button class="btn btn-danger" id="confirmYes">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ADMIN PASSWORD MODAL ============ -->
+  <div class="modal-backdrop" id="pwModal" hidden>
+    <div class="modal pw-modal" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
+      <div class="modal-head">
+        <h2 id="pwTitle">Enter admin password</h2>
+        <button class="icon-btn" id="pwClose" aria-label="Cancel">✕</button>
+      </div>
+      <div class="pw-body">
+        <p class="pw-msg" id="pwMsg"></p>
+        <input type="password" id="pwInput" class="input" autocomplete="off" aria-label="Password" />
+        <p class="pw-error" id="pwError" role="alert"></p>
+        <p class="pw-hint muted small" id="pwHint"></p>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" id="pwCancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="pwOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden file input for import -->
+  <input type="file" id="importFile" accept=".json,.csv,application/json,text/csv" hidden />
+  <!-- Hidden file input for logo upload -->
+  <input type="file" id="logoFile" accept="image/*" hidden />
+
+  <!-- Toast + live region -->
+  <div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
+  <div class="sr-only" id="srLive" aria-live="polite"></div>
+
+  <!-- Cloud sync + login. The Supabase SDK loads first, then cloud.js, which
+       handles sign-in, pulls saved data, and then starts the app (script.js).
+       If the CDN is unreachable, cloud.js falls back to loading the app offline. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="cloud.js" defer></script>
+</body>
+</html>
