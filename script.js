@@ -239,7 +239,7 @@
 
   /* ---------- 2b. Central config: load / save / helpers ---------- */
   let config = deepClone(DEFAULT_CONFIG);
-  let adminUnlocked = false;   // in-memory only; always re-locks on refresh (security)
+  let adminUnlocked = true;    // admin lock removed by owner — settings always open
 
   function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
@@ -1468,21 +1468,15 @@
   }
   /** Ask for the password before a destructive op, if that guard is enabled. */
   async function confirmSensitive(reason) {
-    if (!config.admin.requirePwForSensitive) return true;
-    const pw = await promptPassword({ title: "Confirm your password", msg: reason || "This is a sensitive action." });
-    if (pw === null) return false;
-    if (!checkAdminPw(pw)) { toast("Incorrect password.", "error"); return false; }
+    // Admin lock removed by owner — no password required for sensitive actions.
     return true;
   }
 
   /* ---- Admin unlock / lock / idle timeout ---- */
   async function adminUnlock() {
-    const pw = await promptPassword({ title: "Owner / Admin sign-in", msg: "Enter the admin password to manage business settings." });
-    if (pw === null) return;
-    if (!checkAdminPw(pw)) { toast("Incorrect password.", "error"); return; }
+    // Admin lock removed by owner — open settings without a password prompt.
     adminUnlocked = true;
     noteActivity(); startAdminTimer();
-    toast("Admin unlocked.", "success");
     renderSettings();
   }
   function adminLock() {
@@ -1564,7 +1558,7 @@
       localStorage.removeItem(LS_BACKUP); localStorage.removeItem(LS_BACKUPS);
     } catch (_) {}
     persistNow(); saveConfig();
-    adminUnlocked = false; stopAdminTimer();
+    adminUnlocked = true; stopAdminTimer();
     toast("CRM reset to factory defaults.", "success");
     setView("dashboard");
   }
@@ -1719,9 +1713,9 @@
        </div>`);
   }
   function adminUnlockedHTML() {
-    return `<div class="admin-banner"><span>🔓 Admin unlocked</span><button class="btn btn-sm" data-act="adminLock">Lock</button></div>` +
-      businessCardHTML() + packagesCardHTML() + workflowCardHTML() +
-      securityCardHTML() + dataMgmtCardHTML() + diagnosticsCardHTML() + teamCardHTML();
+    // Admin lock removed by owner — no lock banner, no Security (password) card.
+    return businessCardHTML() + packagesCardHTML() + workflowCardHTML() +
+      dataMgmtCardHTML() + diagnosticsCardHTML() + teamCardHTML();
   }
   function businessCardHTML() {
     const b = config.business;
