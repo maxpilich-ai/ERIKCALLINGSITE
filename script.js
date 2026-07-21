@@ -515,21 +515,13 @@
     };
   }
 
+  // Only the handful of numbers that matter day-to-day while cold-calling.
+  // (The old dashboard showed 14 cards; most sat at 0 and just added clutter.)
   const STAT_CARDS = [
-    { key: "total",      label: "Total Leads",      accent: "#2563eb", fmt: (s) => s.total },
-    { key: "active",     label: "Active Leads",     accent: "#2563eb", fmt: (s) => s.active },
-    { key: "yes",        label: "Yes Leads",        accent: "#16a34a", fmt: (s) => s.yes },
-    { key: "maybe",      label: "Maybe Leads",      accent: "#d97706", fmt: (s) => s.maybe },
-    { key: "no",         label: "No Leads",         accent: "#64748b", fmt: (s) => s.no },
-    { key: "callsToday", label: "Calls Today",      accent: "#7c3aed", fmt: (s) => s.callsToday },
-    { key: "callsWeek",  label: "Calls This Week",  accent: "#7c3aed", fmt: (s) => s.callsWeek },
-    { key: "earnToday",  label: "Total Earnings (Today)", accent: "#16a34a", fmt: (s) => money(s.earnToday) },
-    { key: "monthly",    label: "Monthly Earnings", accent: "#16a34a", fmt: (s) => money(s.monthly) },
-    { key: "lifetime",   label: "Lifetime Earnings",accent: "#16a34a", fmt: (s) => money(s.lifetime) },
-    { key: "conversion", label: "Conversion Rate",  accent: "#2563eb", fmt: (s) => s.conversion.toFixed(1) + "%", sub: "Yes ÷ all leads" },
-    { key: "closeRate",  label: "Close Rate",       accent: "#2563eb", fmt: (s) => s.closeRate.toFixed(1) + "%", sub: "Yes ÷ (Yes+No)" },
-    { key: "avgComm",    label: "Average Commission", accent: "#7c3aed", fmt: (s) => money(s.avgComm) },
-    { key: "pipeline",   label: "Pipeline Value",   accent: "#d97706", fmt: (s) => money(s.pipeline), sub: "Active + Maybe" },
+    { key: "total",      label: "Total Leads",   accent: "#2563eb", fmt: (s) => s.total },
+    { key: "active",     label: "Active Leads",  accent: "#2563eb", fmt: (s) => s.active },
+    { key: "callsToday", label: "Calls Today",   accent: "#7c3aed", fmt: (s) => s.callsToday },
+    { key: "yes",        label: "Closed Deals",  accent: "#16a34a", fmt: (s) => s.yes },
   ];
 
   function renderDashboard() {
