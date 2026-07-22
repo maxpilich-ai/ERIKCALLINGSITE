@@ -143,6 +143,11 @@
   }
 
   function todayStr() { return new Date().toISOString().slice(0, 10); }
+  function addDaysStr(baseStr, days) {
+    const base = parseDate(baseStr) || new Date();
+    const d = new Date(base.getTime()); d.setDate(d.getDate() + (Number(days) || 0));
+    return d.toISOString().slice(0, 10);
+  }
   function parseDate(s) { const d = s ? new Date(s + "T00:00:00") : null; return d && !isNaN(d) ? d : null; }
   function startOfWeek(d) { const x = new Date(d); const day = (x.getDay() + 6) % 7; x.setDate(x.getDate() - day); x.setHours(0,0,0,0); return x; }
 
@@ -477,6 +482,9 @@
     let callsToday = 0, callsWeek = 0;
     let lifetime = 0, monthly = 0, pipeline = 0, largest = 0;
     let closedCount = 0, contactedCount = 0;
+    let followOverdue = 0, followToday = 0, followUpcoming = 0;
+    const todayD = parseDate(today);
+    const upcomingLimit = todayD ? new Date(todayD.getTime() + 7 * 86400000) : null;
 
     for (const l of leads) {
       if (l.status === "active") active++;
@@ -495,7 +503,20 @@
         if ((l.closeDate || "").slice(0, 7) === monthKey) monthly += l.commission;
         if (l.commission > largest) largest = l.commission;
       }
-      if (l.status === "active" || l.status === "maybe") pipeline += l.commission;
+      if (l.status === "active" || l.status === "maybe") {
+        pipeline += l.commission;
+        // Follow-up buckets so the dashboard can surface call-backs that would
+        // otherwise be buried in the list. Snoozed leads are not counted "due".
+        const f = parseDate(l.followUpDate);
+        if (f && todayD) {
+          const sn = parseDate(l.snoozeUntil);
+          if (!(sn && sn > now)) {
+            if (f < todayD) followOverdue++;
+            else if (f.getTime() === todayD.getTime()) followToday++;
+            else if (upcomingLimit && f <= upcomingLimit) followUpcoming++;
+          }
+        }
+      }
     }
 
     const worked = leads.filter((l) => l.status === "closed" || l.status === "archived").length;
@@ -512,6 +533,7 @@
       callsToday, callsWeek,
       earnToday, monthly, lifetime, pipeline, largest,
       conversion, closeRate, avgComm, closedCount,
+      followOverdue, followToday, followUpcoming,
     };
   }
 
@@ -536,7 +558,33 @@
     const hour = new Date().getHours();
     const hi = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
     $("#dashGreeting").textContent = `${hi}. You have ${s.active} active lead${s.active === 1 ? "" : "s"} and ${money(s.pipeline)} in the pipeline.`;
+    renderCallbacks(s);
     drawCharts();
+  }
+
+  /** Prominent, unmissable call-back banner at the top of the dashboard.
+   *  Hidden entirely when there is nothing due, so it never adds noise.
+   *  Clicking a chip jumps straight to the matching list, pre-filtered. */
+  function renderCallbacks(s) {
+    const el = $("#callbacksBanner");
+    if (!el) return;
+    const chips = [];
+    if (s.followOverdue) chips.push(`<button type="button" class="cb-chip cb-overdue" data-cb="due">⚠️ ${s.followOverdue} overdue</button>`);
+    if (s.followToday) chips.push(`<button type="button" class="cb-chip cb-today" data-cb="due">📞 ${s.followToday} due today</button>`);
+    if (s.followUpcoming) chips.push(`<button type="button" class="cb-chip cb-upcoming" data-cb="upcoming">🗓️ ${s.followUpcoming} upcoming (7 days)</button>`);
+    if (!chips.length) { el.hidden = true; el.innerHTML = ""; return; }
+    el.hidden = false;
+    el.innerHTML = `<span class="cb-title">Call-backs</span>${chips.join("")}`;
+    el.onclick = (ev) => {
+      const chip = ev.target.closest("[data-cb]");
+      if (!chip) return;
+      const upcoming = chip.dataset.cb === "upcoming";
+      // Due call-backs live in Active (the hourly automation moves due Maybe
+      // leads there); upcoming ones are future-dated and still in Maybe.
+      ui.filters.follow = upcoming ? "scheduled" : "due";
+      setView(upcoming ? "maybe" : "active");
+      const ff = $("#filterFollow"); if (ff) ff.value = ui.filters.follow;
+    };
   }
 
   /** Minimal dependency-free canvas bar chart. */
@@ -1073,12 +1121,22 @@
     if (status !== "closed") { l.closeDate = ""; }
     if (status === "archived") { /* keep everything, just archived */ }
     if (status === "active") { l.snoozeUntil = ""; }
+    // A "Maybe" lead with no follow-up date would silently disappear: it never
+    // resurfaces via processFollowUps and shows no ⏰ reminder. Give it a
+    // sensible default so every Maybe is guaranteed to come back around.
+    let autoFollow = false;
+    if (status === "maybe" && !l.followUpDate) {
+      l.followUpDate = addDaysStr(todayStr(), config.workflow.followUpInterval);
+      autoFollow = true;
+    }
     save();
     renderAll();
 
     const msg = {
       closed: `"${l.business}" marked YES 🎉  ${l.commission ? "+" + money(l.commission) : ""}`,
-      maybe: `"${l.business}" moved to Maybe.`,
+      maybe: autoFollow
+        ? `"${l.business}" moved to Maybe — follow-up set for ${l.followUpDate}.`
+        : `"${l.business}" moved to Maybe.`,
       active: `"${l.business}" moved to Active.`,
       archived: `"${l.business}" archived.`,
     }[status];
@@ -1709,7 +1767,7 @@
     return `<div class="prose">
       <p><strong>Working leads:</strong> Each lead has quick ✅ Yes, 🤔 Maybe, and 🗄️ No buttons. Marking <em>Yes</em> asks which package was sold and records the commission automatically.</p>
       <p><strong>Notes:</strong> The 📝 button opens a notes window that auto-saves as you type. Leads with notes show an amber dot.</p>
-      <p><strong>Follow-ups:</strong> Give a Maybe lead a follow-up date; it returns to Active automatically when due.</p>
+      <p><strong>Follow-ups:</strong> Marking a lead 🤔 Maybe schedules a call-back automatically (your default interval) if you don't pick a date, so nothing slips through. Due call-backs return to Active on their own, and the Dashboard shows a banner counting anything overdue, due today, or upcoming.</p>
       <p><strong>Backups:</strong> Data lives in this browser. Use Export or Download backup regularly, especially before switching devices.</p>
     </div>`;
   }

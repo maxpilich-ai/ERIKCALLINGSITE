@@ -11,11 +11,12 @@ let SCRIPT = fs.readFileSync(path.join(APP, "script.js"), "utf8");
 // Inject an export of internal functions/state right before the IIFE closes.
 const EXPORT = `
 ;try{window.__api={
-  esc,uid,phoneDigits,formatPhone,normalizeSite,siteHref,money,todayStr,parseDate,startOfWeek,
+  esc,uid,phoneDigits,formatPhone,normalizeSite,siteHref,money,todayStr,addDaysStr,parseDate,startOfWeek,
   sanitizeLead,dedupeIds,computeStats,leadCommission,recalcCommissions,packageById,parseCSV,
   matchesSearch,currentLeads,mergeConfig,sanitizeConfig,clampNum,mergeImport,exportLeads,
   hashPw,checkAdminPw,usingDefaultAdminPw,isFollowDue,processFollowUps,
   checkAdminTimeout,adminUnlock,adminLock,renderSettings,renderAll,setView,
+  setStatus,snooze,archiveLead,
   copyPhone,markCalled,getLead,submitForm,save,persistNow,load,
   get leads(){return leads},set leads(v){leads=v},
   get config(){return config},set config(v){config=v},

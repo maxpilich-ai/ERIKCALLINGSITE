@@ -9,7 +9,7 @@
   <meta name="description" content="LeadDesk CRM — a fast, offline lead management tool for commission salespeople." />
   <meta name="theme-color" content="#2563eb" />
   <title>LeadDesk CRM</title>
-  <link rel="stylesheet" href="style.css?v=8" />
+  <link rel="stylesheet" href="style.css?v=9" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📇</text></svg>" />
 </head>
 <body>
@@ -72,6 +72,7 @@
           <h1>Dashboard</h1>
           <p class="view-sub" id="dashGreeting">Your pipeline at a glance.</p>
         </div>
+        <div class="callbacks" id="callbacksBanner" role="region" aria-label="Call-backs due" aria-live="polite" hidden></div>
         <div class="stat-grid" id="statGrid" aria-live="polite"></div>
         <div class="dash-charts">
           <div class="card chart-card">
@@ -343,6 +344,6 @@
        pulls saved data from the shared row, and then starts the app (script.js).
        If the CDN is unreachable, cloud.js falls back to loading the app offline. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="cloud.js?v=8" defer></script>
+  <script src="cloud.js?v=9" defer></script>
 </body>
 </html>

@@ -11,7 +11,7 @@ A fast lead-management CRM for commission salespeople. It runs entirely in the b
 - **Lead pipeline** — Active, Maybe, Closed (Yes), and Archived, with one-click ✅ Yes / 🤔 Maybe / 🗄️ No buttons.
 - **Package-driven commissions** — Marking a lead *Yes* asks which website package was sold; the commission is calculated automatically from the package price and your commission rate. Salespeople never type a price.
 - **Notes** — A dedicated auto-saving notes window per lead, with an amber dot marking leads that have notes.
-- **Follow-ups** — Give a Maybe lead a follow-up date and it returns to Active automatically when due.
+- **Follow-ups** — Marking a lead 🤔 Maybe automatically schedules a follow-up date (using your default interval) if you don't set one, so a call-back can never be forgotten. Due Maybe leads return to Active automatically, and the Dashboard shows an unmissable banner counting overdue, due-today, and upcoming call-backs.
 - **Dashboard** — Lifetime and monthly earnings, pipeline value, conversion and close rates, and activity charts.
 - **Search, filter, sort, and bulk actions** across the whole book of business.
 - **Settings & Admin** — Business details and logo, editable packages/prices/commission %, workflow defaults, currency, an owner/admin area, diagnostics, and a future-ready team section.
@@ -117,15 +117,16 @@ LeadDesk uses no cookies, ad networks, or third-party analytics. Your data is st
 
 ## Development and testing
 
-The app ships with headless (jsdom) test suites that load the real `index.html` + `script.js` (not a reimplementation) and exercise the core logic, adversarial/breakage cases, and the cloud-sync layer — **107 assertions in total**. Install `jsdom` (`npm install jsdom`) and run them with Node.js from the repo folder:
+The app ships with headless (jsdom) test suites that load the real `index.html` + `script.js` (not a reimplementation) and exercise the core logic, adversarial/breakage cases, end-to-end scenarios, and the cloud-sync layer — **152 assertions in total**. Install `jsdom` (`npm install jsdom`) and run them with Node.js from the repo folder:
 
 ```bash
 node t_core.js     # 64 — formatters, sanitize, commission math, stats, CSV, filters, config
 node t_break.js    # 29 — corrupt storage, huge datasets, XSS escaping, undo, races, follow-ups
+node t_scenario.js # 45 — simulated workday, follow-up safety net, call-back banner, persistence/import round-trips, 5k-lead performance
 node qa_cloud.js   # 14 — Supabase hydrate/reconcile, push debounce, offline fallback
 ```
 
-`t_core.js` and `t_break.js` load the app through `harness.js`. Each suite prints a `PASSED / FAILED` summary and exits non-zero on failure.
+`t_core.js`, `t_break.js`, and `t_scenario.js` load the app through `harness.js`. Each suite prints a `PASSED / FAILED` summary and exits non-zero on failure.
 
 ---
 
