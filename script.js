@@ -2005,6 +2005,230 @@
     if (/price|commissionPct|currency/.test(path)) { recalcCommissions(); updateSettingsPreviews(); }
   }
 
+  /* ---------- Playbook (Erik's guide) ---------- */
+  const VENMO = { erik: "@Erik-Pilich", max: "@Maxim-Pilich" };
+  const PKG_ORDER = ["starter", "business", "premium"];
+  const PKG_INFO = {
+    starter: {
+      tag: "The one-pager",
+      blurb: "Simple, clean, gets them online fast. Perfect for a business that just needs to look legit and be reachable.",
+      features: [
+        "Single-page website (all their info on one scroll)",
+        "Contact form so leads hit their inbox",
+        "Tap-to-call button (big on mobile)",
+        "Hours + map / location",
+        "Links to their socials",
+      ],
+    },
+    business: {
+      tag: "The real deal",
+      blurb: "A proper multi-page site. For a business that wants to show off services, photos, and look like the established name in town.",
+      features: [
+        "Up to 5 pages (Home, About, Services, Gallery, Contact)",
+        "Photo gallery to show their work",
+        "Everything in Starter, built out bigger",
+        "Basic SEO so Google can find them",
+        "Google Maps embed",
+      ],
+    },
+    premium: {
+      tag: "The money-maker",
+      blurb: "The full setup for a business that wants to actually take money and bookings online. This is the flex tier.",
+      features: [
+        "Everything in Business",
+        "Stripe payments — take money right on the site",
+        "Online booking / scheduling",
+        "As many pages as it needs",
+        "Priority support from us",
+      ],
+    },
+  };
+  // 7-step "after the yes" workflow — the stuff Erik keeps asking about.
+  const WORKFLOW = [
+    { n: 1, t: "Get the $100 deposit FIRST", d: "Before anything else. $100 to your Venmo (" + VENMO.erik + ") or Max's (" + VENMO.max + "). No deposit = no site. This is how we don't waste time building for someone who ghosts." },
+    { n: 2, t: "Grab ALL their info", d: "Business name, what they do, logo + photos, what they want it to say, and the domain (website name) they want. More info = better. Don't leave the call without it." },
+    { n: 3, t: "Hand it off to Max", d: "You send everything to Max. Max builds the actual site. You closed it — now the build is handled." },
+    { n: 4, t: "Build takes 1–2 weeks", d: "That's the normal turnaround. Set that expectation with the customer so nobody's blowing up your phone on day 2." },
+    { n: 5, t: "Balance due before it goes live", d: "When the site's done, they pay the rest to make it live. If they don't pay — the site comes down. Simple. We hold the leverage until we're paid." },
+    { n: 6, t: "You get paid", d: "When the customer pays, Max Venmos you your cut (35%). Starter = $175, Business = $420, Premium = $875." },
+    { n: 7, t: "Year one is included, then it's cheap", d: "The domain is covered the first year. After that it's just ~$15–20/year to keep the website name. Tell them that up front so it's never a surprise." },
+  ];
+  function erikCut(price) { return Math.round((Number(price) || 0) * (Number(config.commissionPct) || 0) / 100); }
+  function pkgPrice(id) { const p = packageById(id); return p ? p.price : 0; }
+  function customerFAQ() {
+    return [
+      { q: "How much does a website cost?", a: "Depends what you need. A simple one-pager is " + money(pkgPrice("starter")) + ", a full multi-page site is " + money(pkgPrice("business")) + ", and the premium setup with online payments is " + money(pkgPrice("premium")) + "." },
+      { q: "When do I pay?", a: "$100 deposit up front to lock it in. The rest is due once your site is finished and ready to go live." },
+      { q: "Is the deposit refundable?", a: "If we haven't started building yet, yeah — we can send the $100 back. Once we've started building, the deposit covers that work." },
+      { q: "How long does it take?", a: "Usually 1–2 weeks from when we've got all your info and the deposit." },
+      { q: "What happens after the first year?", a: "Your first year of the domain is included. After that it's just about $15–20 a year to keep your website name." },
+      { q: "Who am I working with?", a: "Two brothers who build websites. One handles the calls, one builds the site. You're dealing with real people, not some agency." },
+      { q: "Can I change stuff later?", a: "Small tweaks? We got you. Bigger changes down the line might cost a little, but we'll always tell you before charging anything." },
+    ];
+  }
+  function renderPlaybook() {
+    const host = $("#playbookBody");
+    if (!host) return;
+    const cut = (id) => erikCut(pkgPrice(id));
+    const pkgCards = PKG_ORDER.map((id) => {
+      const p = packageById(id); if (!p) return "";
+      const info = PKG_INFO[id] || { tag: "", blurb: "", features: [] };
+      const feats = info.features.map((f) => "<li>" + esc(f) + "</li>").join("");
+      return (
+        '<div class="pb-pkg pb-pkg-' + id + '">' +
+        '<div class="pb-pkg-tag">' + esc(info.tag) + "</div>" +
+        "<h4>" + esc(p.name) + "</h4>" +
+        '<div class="pb-price">' + esc(money(p.price)) + "</div>" +
+        '<div class="pb-cut">You keep ' + esc(money(cut(id))) + "</div>" +
+        '<p class="pb-blurb">' + esc(info.blurb) + "</p>" +
+        '<ul class="pb-features">' + feats + "</ul>" +
+        "</div>"
+      );
+    }).join("");
+    const steps = WORKFLOW.map((s) =>
+      '<div class="pb-step"><div class="pb-step-n">' + s.n + "</div>" +
+      "<div><h5>" + esc(s.t) + "</h5><p>" + esc(s.d) + "</p></div></div>"
+    ).join("");
+    const faqs = customerFAQ().map((f) =>
+      '<div class="pb-faq"><h5>' + esc(f.q) + "</h5><p>" + esc(f.a) + "</p></div>"
+    ).join("");
+    host.innerHTML =
+      '<div class="pb-hero">' +
+        "<h2>The Playbook 🧢</h2>" +
+        "<p>Everything you need, Erik. Pricing, packages, and exactly how this all works once you get the yes. Read it once and you'll never wonder again.</p>" +
+      "</div>" +
+      '<div class="pb-h">💰 The Packages</div>' +
+      '<div class="pb-pkgs">' + pkgCards + "</div>" +
+      '<div class="pb-h">🤑 How YOU get paid</div>' +
+      '<div class="pb-pay">' +
+        "<p>You earn <strong>" + esc(String(config.commissionPct)) + "%</strong> of every deal you close. Here's your cut on each package:</p>" +
+        '<div class="pb-cuts">' +
+          '<div class="pb-cut-row"><span>Starter</span><b>' + esc(money(cut("starter"))) + "</b></div>" +
+          '<div class="pb-cut-row"><span>Business</span><b>' + esc(money(cut("business"))) + "</b></div>" +
+          '<div class="pb-cut-row"><span>Premium</span><b>' + esc(money(cut("premium"))) + "</b></div>" +
+        "</div>" +
+        '<p class="pb-hype">Close 3 Business sites in a week? That\'s ' + esc(money(cut("business") * 3)) + ' in your pocket. It\'s all about the reps. 📈</p>' +
+      "</div>" +
+      '<div class="pb-h">🚀 After they say YES — the play</div>' +
+      '<div class="pb-steps">' + steps + "</div>" +
+      '<div class="pb-callout">🔒 <strong>The deposit rule:</strong> No $100, no site. Doesn\'t matter how nice they sound. We don\'t build for promises — we build for paying customers. Deposit first, every single time.</div>' +
+      '<div class="pb-h">🙋 What customers ask (and what to say)</div>' +
+      '<div class="pb-faqs">' + faqs + "</div>" +
+      '<div class="pb-h">📱 Using this app</div>' +
+      '<div class="pb-crm">' +
+        "<p>Every business you call goes in here as a lead. Update the status as you go: <strong>New</strong> → <strong>Active</strong> (working them) → <strong>Won</strong> (closed it!). Set follow-ups so nobody slips through. The dashboard shows your wins and what you've earned. Work the list, keep it updated, watch that earnings chart climb. 💪</p>" +
+      "</div>";
+  }
+
+  /* ---------- "max" chatbot ---------- */
+  const MAX_TOPICS = [
+    { key: "packages", label: "What are the packages?", kw: ["package", "packages", "tier", "tiers", "plan", "plans", "starter", "business", "premium", "options", "option"] },
+    { key: "price", label: "How much do they cost?", kw: ["price", "prices", "cost", "costs", "how much", "pricing", "charge", "expensive", "cheap"] },
+    { key: "pay", label: "How do I get paid?", kw: ["get paid", "my cut", "commission", "my money", "how much do i make", "my pay", "earn", "payout", "my share", "percentage", "percent"] },
+    { key: "yes", label: "They said yes — now what?", kw: ["said yes", "closed", "after the yes", "now what", "next step", "what next", "they agree", "they want it", "how does this work", "how do we do this", "process", "workflow", "steps"] },
+    { key: "deposit", label: "What's the deposit rule?", kw: ["deposit", "100", "hundred", "upfront", "up front", "down payment", "venmo", "pay first", "collect"] },
+    { key: "balance", label: "When do they pay the rest?", kw: ["balance", "rest", "remainder", "final payment", "pay the rest", "second payment", "full amount", "before live", "go live"] },
+    { key: "collect", label: "What info do I collect?", kw: ["what info", "collect", "gather", "information", "what do i need", "what to ask", "details", "grab"] },
+    { key: "time", label: "How long does it take?", kw: ["how long", "timeline", "turnaround", "when done", "how fast", "weeks", "delivery", "build time"] },
+    { key: "domain", label: "What about the domain?", kw: ["domain", "yearly", "year", "renewal", "hosting", "website name", "url", "15", "20", "annual"] },
+    { key: "refund", label: "Is the deposit refundable?", kw: ["refund", "refundable", "money back", "changes mind", "cancel", "back out", "give back"] },
+    { key: "changes", label: "Can they change stuff later?", kw: ["change", "changes", "edit", "update later", "tweak", "revise", "revision", "fix later", "after live", "maintenance"] },
+    { key: "who", label: "Who are we / what do I say?", kw: ["who are we", "who am i", "who are you", "company", "agency", "brothers", "about us", "what do we do", "pitch"] },
+    { key: "crm", label: "How do I use this app?", kw: ["use this app", "how to use", "crm", "leads", "status", "follow up", "follow-up", "dashboard", "track"] },
+  ];
+  function maxAnswer(key) {
+    const cut = (id) => money(erikCut(pkgPrice(id)));
+    switch (key) {
+      case "packages":
+        return "Three tiers, my guy 🧢<br><br><strong>Starter (" + money(pkgPrice("starter")) + ")</strong> — one-page site, contact form, tap-to-call. Gets 'em online fast.<br><br><strong>Business (" + money(pkgPrice("business")) + ")</strong> — up to 5 pages, photo gallery, basic SEO. The real deal.<br><br><strong>Premium (" + money(pkgPrice("premium")) + ")</strong> — everything + Stripe payments + online booking. The money-maker.<br><br>Check the Playbook tab for the full breakdown.";
+      case "price":
+        return "Here's the menu 💸<br><br>Starter — <strong>" + money(pkgPrice("starter")) + "</strong><br>Business — <strong>" + money(pkgPrice("business")) + "</strong><br>Premium — <strong>" + money(pkgPrice("premium")) + "</strong><br><br>Match the tier to what they actually need and you'll close more.";
+      case "pay":
+        return "You eat <strong>" + config.commissionPct + "%</strong> of every deal 🤑<br><br>Starter = " + cut("starter") + "<br>Business = " + cut("business") + "<br>Premium = " + cut("premium") + "<br><br>When the customer pays, Max Venmos you your cut. Simple. Keep closing. 📈";
+      case "yes":
+        return "Aight, they said YES — here's the play 🚀<br><br>1️⃣ Get the <strong>$100 deposit</strong> first (Venmo " + VENMO.erik + " or " + VENMO.max + ")<br>2️⃣ Grab ALL their info (name, logo, photos, what they want, domain)<br>3️⃣ Hand it to Max — he builds it<br>4️⃣ Build takes 1–2 weeks<br>5️⃣ They pay the balance before it goes live<br>6️⃣ You get your cut 💰<br><br>Full details in the Playbook tab.";
+      case "deposit":
+        return "🔒 The golden rule: <strong>$100 deposit before ANY building happens.</strong><br><br>Goes to your Venmo (" + VENMO.erik + ") or Max's (" + VENMO.max + "). No deposit = no site. Doesn't matter how nice they sound — we build for paying customers, not promises.";
+      case "balance":
+        return "The rest is due <strong>when the site's done and ready to go live</strong>. 🌐<br><br>They pay → it goes live. They don't pay → it comes down. We hold the leverage until we're paid in full. No exceptions.";
+      case "collect":
+        return "Don't hang up without this 📝<br><br>• Business name + what they do<br>• Their logo + photos<br>• What they want the site to say<br>• The domain (website name) they want<br><br>The more info you grab, the smoother Max's build. More = better, always.";
+      case "time":
+        return "⏱️ <strong>1–2 weeks</strong> from when we've got the deposit + all their info.<br><br>Tell the customer that up front so nobody's blowing up your phone on day 2.";
+      case "domain":
+        return "🌐 First year of the domain is <strong>included</strong>.<br><br>After that it's just <strong>~$15–20/year</strong> to keep their website name alive. Tell 'em up front so it's never a surprise later.";
+      case "refund":
+        return "Depends on timing 🤝<br><br>Haven't started building yet? We can send the $100 back, no problem.<br><br>Already started building? The deposit covers that work — it's not coming back. That's why we get it first.";
+      case "changes":
+        return "🔧 Small tweaks after it's live? We got 'em, mostly free.<br><br>Bigger changes down the road might cost a little — but we ALWAYS tell them before charging anything. No surprise bills.";
+      case "who":
+        return "Keep it real 🧢: <strong>two brothers who build websites.</strong> One handles the calls (that's you 😤), one builds the sites (that's Max).<br><br>You're not some faceless agency — you're real people who get it done. That's your edge. Use it.";
+      case "crm":
+        return "This app is your command center 📱<br><br>Every business you call → add it as a lead. Move the status: <strong>New → Active → Won</strong>. Set follow-ups so nobody slips. The dashboard tracks your wins + earnings.<br><br>Work the list, keep it updated, watch that chart climb. 💪";
+      default:
+        return "I got you on all things website-selling 🧢 — packages, pricing, your cut, what to do after the yes, the deposit rule, all of it. Tap a question below or just ask.";
+    }
+  }
+  function maxMatch(text) {
+    const t = (text || "").toLowerCase();
+    if (!t.trim()) return null;
+    let best = null, bestScore = 0;
+    for (const topic of MAX_TOPICS) {
+      let score = 0;
+      for (const k of topic.kw) {
+        if (t.indexOf(k) !== -1) score += k.length; // longer matches win
+      }
+      if (score > bestScore) { bestScore = score; best = topic.key; }
+    }
+    return bestScore > 0 ? best : null;
+  }
+  let maxBooted = false;
+  function maxSay(html, who) {
+    const log = $("#maxLog");
+    if (!log) return;
+    const row = document.createElement("div");
+    row.className = "max-msg " + (who === "user" ? "max-user" : "max-bot");
+    if (who === "user") row.textContent = html; // user text is plain, escape via textContent
+    else row.innerHTML = html;
+    log.appendChild(row);
+    log.scrollTop = log.scrollHeight;
+  }
+  function renderMaxChips() {
+    const wrap = $("#maxChips");
+    if (!wrap) return;
+    const quick = ["packages", "pay", "yes", "deposit", "domain", "crm"];
+    wrap.innerHTML = quick.map((key) => {
+      const topic = MAX_TOPICS.find((x) => x.key === key);
+      return topic ? '<button type="button" class="max-chip" data-topic="' + key + '">' + esc(topic.label) + "</button>" : "";
+    }).join("");
+  }
+  function maxHandle(text, topicKey) {
+    const key = topicKey || maxMatch(text);
+    if (text) maxSay(text, "user");
+    setTimeout(() => {
+      if (key) maxSay(maxAnswer(key), "bot");
+      else maxSay("Hmm, I ain't sure on that one 🤔 — try tapping one of the questions below, or check the Playbook tab for the full rundown.", "bot");
+    }, 220);
+  }
+  function bootMax() {
+    if (maxBooted) return;
+    maxBooted = true;
+    maxSay("Yo Erik! 🧢 It's max. Ask me anything about the packages, pricing, your cut, or how this whole thing works once you get the yes. Tap a question or type it out 👇", "bot");
+    renderMaxChips();
+  }
+  function setMaxOpen(open) {
+    const chat = $("#maxChat");
+    const fab = $("#maxFab");
+    if (!chat || !fab) return;
+    chat.classList.toggle("max-hidden", !open);
+    fab.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) {
+      bootMax();
+      const inp = $("#maxText");
+      if (inp) setTimeout(() => inp.focus(), 50);
+    }
+  }
+
   /* ---------- View switching ---------- */
   function setView(view) {
     ui.view = view;
@@ -2013,10 +2237,12 @@
     $$(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
     const onDash = view === "dashboard";
     const onSettings = view === "settings";
-    const onList = !onDash && !onSettings;
+    const onPlaybook = view === "playbook";
+    const onList = !onDash && !onSettings && !onPlaybook;
     $("#view-dashboard").hidden = !onDash;
     $("#view-list").hidden = !onList;
     $("#view-settings").hidden = !onSettings;
+    const pb = $("#view-playbook"); if (pb) pb.hidden = !onPlaybook;
     // reflect status filter for list views (but let explicit filter override within view)
     if (onList) {
       $("#filterStatus").value = ""; // views already scope by status
@@ -2033,6 +2259,7 @@
     refreshNavCounts();
     if (ui.view === "dashboard") { renderDashboard(); }
     else if (ui.view === "settings") { renderSettings(); }
+    else if (ui.view === "playbook") { renderPlaybook(); }
     else { refreshFilterOptions(); renderList(); }
   }
 
@@ -2183,6 +2410,27 @@
     $("#dm_restore").addEventListener("click", () => { closeModal($("#dataMenu")); restoreBackup(); });
     $("#dm_sample").addEventListener("click", () => { closeModal($("#dataMenu")); loadSample(); });
     $("#dm_clear").addEventListener("click", () => { closeModal($("#dataMenu")); clearAll(); });
+
+    // max chatbot
+    const maxFab = $("#maxFab");
+    if (maxFab) {
+      maxFab.addEventListener("click", () => setMaxOpen($("#maxChat").classList.contains("max-hidden")));
+      const mc = $("#maxClose"); if (mc) mc.addEventListener("click", () => setMaxOpen(false));
+      const chips = $("#maxChips");
+      if (chips) chips.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-topic]");
+        if (btn) maxHandle(null, btn.dataset.topic);
+      });
+      const form = $("#maxForm");
+      if (form) form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const inp = $("#maxText");
+        const text = (inp.value || "").trim();
+        if (!text) return;
+        inp.value = "";
+        maxHandle(text, null);
+      });
+    }
 
     // keyboard
     document.addEventListener("keydown", onKey);

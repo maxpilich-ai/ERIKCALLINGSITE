@@ -9,7 +9,7 @@
   <meta name="description" content="LeadDesk CRM — a fast, offline lead management tool for commission salespeople." />
   <meta name="theme-color" content="#2563eb" />
   <title>LeadDesk CRM</title>
-  <link rel="stylesheet" href="style.css?v=10" />
+  <link rel="stylesheet" href="style.css?v=11" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📇</text></svg>" />
 </head>
 <body>
@@ -49,6 +49,7 @@
     <nav class="sidebar" id="sidebar" aria-label="Primary">
       <ul class="nav-list">
         <li><button class="nav-item active" data-view="dashboard"><span class="nav-ico">📊</span><span>Dashboard</span></button></li>
+        <li><button class="nav-item" data-view="playbook"><span class="nav-ico">🧢</span><span>Playbook</span></button></li>
         <li><button class="nav-item" data-view="active"><span class="nav-ico">📞</span><span>Active Leads</span><span class="nav-count" data-count="active">0</span></button></li>
         <li><button class="nav-item" data-view="maybe"><span class="nav-ico">🤔</span><span>Maybe Queue</span><span class="nav-count" data-count="maybe">0</span></button></li>
         <li><button class="nav-item" data-view="closed"><span class="nav-ico">🏆</span><span>Closed Deals</span><span class="nav-count" data-count="closed">0</span></button></li>
@@ -163,6 +164,11 @@
           <button class="set-tab" data-tab="admin" role="tab">Owner / Admin</button>
         </div>
         <div id="settingsBody" class="settings-body"></div>
+      </section>
+
+      <!-- PLAYBOOK VIEW -->
+      <section class="view" id="view-playbook" data-view="playbook" hidden>
+        <div id="playbookBody" class="playbook"></div>
       </section>
     </main>
   </div>
@@ -340,10 +346,31 @@
   <div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
   <div class="sr-only" id="srLive" aria-live="polite"></div>
 
+  <!-- ============ "max" CHATBOT ============ -->
+  <div class="max-chat max-hidden" id="maxChat" role="dialog" aria-label="Chat with max" aria-modal="false">
+    <div class="max-head">
+      <div class="max-ident">
+        <span class="max-ava">🧢</span>
+        <div>
+          <strong>max</strong>
+          <span class="max-status">your website-sales sidekick</span>
+        </div>
+      </div>
+      <button class="icon-btn" id="maxClose" aria-label="Close chat">✕</button>
+    </div>
+    <div class="max-log" id="maxLog"></div>
+    <div class="max-chips" id="maxChips"></div>
+    <form class="max-input" id="maxForm" autocomplete="off">
+      <input type="text" id="maxText" placeholder="Ask max anything…" maxlength="200" aria-label="Message max" />
+      <button type="submit" class="max-send" aria-label="Send">➤</button>
+    </form>
+  </div>
+  <button class="max-fab" id="maxFab" aria-label="Chat with max" aria-expanded="false" aria-haspopup="dialog">🧢</button>
+
   <!-- Cloud sync (no login). The Supabase SDK loads first, then cloud.js, which
        pulls saved data from the shared row, and then starts the app (script.js).
        If the CDN is unreachable, cloud.js falls back to loading the app offline. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="cloud.js?v=10" defer></script>
+  <script src="cloud.js?v=11" defer></script>
 </body>
 </html>
