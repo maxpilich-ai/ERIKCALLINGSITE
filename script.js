@@ -2050,8 +2050,34 @@
     { n: 3, t: "Hand it off to Max", d: "You send everything to Max. Max builds the actual site. You closed it — now the build is handled." },
     { n: 4, t: "Build takes 1–2 weeks", d: "That's the normal turnaround. Set that expectation with the customer so nobody's blowing up your phone on day 2." },
     { n: 5, t: "Balance due before it goes live", d: "When the site's done, they pay the rest to make it live. If they don't pay — the site comes down. Simple. We hold the leverage until we're paid." },
-    { n: 6, t: "You get paid", d: "When the customer pays, Max Venmos you your cut (35%). Starter = $175, Business = $420, Premium = $875." },
+    { n: 6, t: "You get paid", d: "When the customer pays, Max Venmos you your cut. See your exact cut per package below." },
     { n: 7, t: "Year one is included, then it's cheap", d: "The domain is covered the first year. After that it's just ~$15–20/year to keep the website name. Tell them that up front so it's never a surprise." },
+  ];
+  // How the four lead statuses map to a call outcome. Matches STATUS_LABEL exactly.
+  const STATUS_GUIDE = [
+    { id: "active", icon: "📞", when: "You're still working them", d: "Fresh leads and anyone you're actively calling live here. This is your daily grind list — the Active Leads tab." },
+    { id: "maybe", icon: "🤔", when: "They said MAYBE / call me back", d: "Interested but not a yes yet. Mark them Maybe and the app auto-sets a follow-up date. They wait in the Maybe Queue and pop back into your Active list when it's time to call again." },
+    { id: "closed", icon: "🏆", when: "They said YES", d: "You closed it! Mark them Closed. It logs the date, counts your commission, and shows up in your earnings on the Dashboard. This is the win pile — the Closed Deals tab." },
+    { id: "archived", icon: "🗄️", when: "They said NO / not now", d: "Not interested? Archive them. They're out of your way but NOT deleted — they sit in the Archive tab and you can bring them back to Active anytime." },
+  ];
+  // Cold-call opener + objection handling (the on-the-phone stuff).
+  const COLD_OPENER = "Hey, is this the owner? 👋 My name's Erik — I build websites for local businesses like yours. I looked you up and noticed you don't have a site (or the one you've got is pretty dated). I can get you online in about a week for way less than you'd think. Got 30 seconds?";
+  function objectionsList() {
+    const p = (id) => money(pkgPrice(id));
+    return [
+      { o: "\u201CI already have a website.\u201D", a: "\u201CLove that — is it bringing you new customers? A lot of the sites I redo are slow, hard to find on Google, or don't work great on phones. I can take a quick look and tell you straight up if yours is solid or costing you business.\u201D" },
+      { o: "\u201CI'm too busy / not interested.\u201D", a: "\u201CTotally get it, you're running a business. That's exactly why I keep it simple — you send me a few photos and I handle the rest. Can I text you an example and call back when it's better?\u201D  (\u2192 mark them Maybe + set the follow-up)" },
+      { o: "\u201CHow much is it?\u201D", a: "\u201CDepends what you need — a clean one-pager starts at " + p("starter") + ", full multi-page sites run more. Most folks in your spot go with the middle option. Want me to walk you through what you'd actually get?\u201D" },
+      { o: "\u201CI don't have the money right now.\u201D", a: "\u201CNo stress — it's just a $100 deposit to start, and the rest isn't due until your site's done and you've seen it live. Zero risk to lock it in today.\u201D" },
+      { o: "\u201CLet me think about it.\u201D", a: "\u201CFor sure — it's your business, you should. How about I lock in today's pricing with the $100 deposit, and if you change your mind before I start building, I send it right back?\u201D  (\u2192 mark them Maybe, set a follow-up, don't let it go cold)" },
+    ];
+  }
+  // Common app hiccups + the fix.
+  const TROUBLESHOOT = [
+    { q: "I don't see my leads on another device", a: "The app syncs to the cloud automatically — give it a few seconds and refresh. If it's still off, make sure you've got internet. Your data is always safe on whichever device you added it on." },
+    { q: "I accidentally archived or messed up a lead", a: "Nothing's really gone. Archived leads live in the Archive tab — open it and send them back to Active. To undo a bigger mess, use Restore backup in the \u22EF Data & Backup menu." },
+    { q: "I want a copy of all my leads", a: "\u22EF menu \u2192 Export data. It downloads a file with every lead. Do this now and then — it's your safety net." },
+    { q: "The app looks weird after an update", a: "Hard-refresh the page: Cmd+Shift+R on Mac, or Ctrl+Shift+R on Windows. That pulls the newest version." },
   ];
   function erikCut(price) { return Math.round((Number(price) || 0) * (Number(config.commissionPct) || 0) / 100); }
   function pkgPrice(id) { const p = packageById(id); return p ? p.price : 0; }
@@ -2092,13 +2118,34 @@
     const faqs = customerFAQ().map((f) =>
       '<div class="pb-faq"><h5>' + esc(f.q) + "</h5><p>" + esc(f.a) + "</p></div>"
     ).join("");
+    const statusCards = STATUS_GUIDE.map((s) =>
+      '<div class="pb-status pb-status-' + s.id + '">' +
+        '<div class="pb-status-top"><span class="pb-status-ico">' + s.icon + "</span>" +
+        "<div><strong>" + esc(STATUS_LABEL[s.id]) + "</strong>" +
+        '<span class="pb-status-when">' + esc(s.when) + "</span></div></div>" +
+        "<p>" + esc(s.d) + "</p>" +
+      "</div>"
+    ).join("");
+    const objs = objectionsList().map((x) =>
+      '<div class="pb-obj"><p class="pb-obj-q">' + esc(x.o) + "</p><p class=\"pb-obj-a\">" + esc(x.a) + "</p></div>"
+    ).join("");
+    const trouble = TROUBLESHOOT.map((t) =>
+      '<div class="pb-faq"><h5>' + esc(t.q) + "</h5><p>" + esc(t.a) + "</p></div>"
+    ).join("");
     host.innerHTML =
       '<div class="pb-hero">' +
         "<h2>The Playbook 🧢</h2>" +
-        "<p>Everything you need, Erik. Pricing, packages, and exactly how this all works once you get the yes. Read it once and you'll never wonder again.</p>" +
+        "<p>Everything you need, Erik — from your first cold call to getting paid. Pricing, packages, what to say, and exactly how it all works. Read it once and you'll never wonder again.</p>" +
       "</div>" +
+
+      '<div class="pb-h">☀️ Your day, start to finish</div>' +
+      '<div class="pb-crm">' +
+        "<p><strong>1.</strong> Open <strong>Active Leads</strong> and start calling. <strong>2.</strong> Add every business you call as a lead (or import a list). <strong>3.</strong> After each call, set the status: <strong>Yes → Closed</strong>, <strong>Maybe → Maybe</strong>, <strong>No → Archive</strong>. <strong>4.</strong> Jot a quick note so you remember the convo. <strong>5.</strong> Check the <strong>Dashboard</strong> for follow-ups due today and watch your earnings climb. Rinse and repeat. That's the whole game. 💪</p>" +
+      "</div>" +
+
       '<div class="pb-h">💰 The Packages</div>' +
       '<div class="pb-pkgs">' + pkgCards + "</div>" +
+
       '<div class="pb-h">🤑 How YOU get paid</div>' +
       '<div class="pb-pay">' +
         "<p>You earn <strong>" + esc(String(config.commissionPct)) + "%</strong> of every deal you close. Here's your cut on each package:</p>" +
@@ -2109,32 +2156,69 @@
         "</div>" +
         '<p class="pb-hype">Close 3 Business sites in a week? That\'s ' + esc(money(cut("business") * 3)) + ' in your pocket. It\'s all about the reps. 📈</p>' +
       "</div>" +
+
+      '<div class="pb-h">🎯 Yes, Maybe, or No — how to mark it</div>' +
+      "<p class=\"pb-note\">Every call ends one of three ways. Here's exactly which button to hit and what happens:</p>" +
+      '<div class="pb-statuses">' + statusCards + "</div>" +
+
+      '<div class="pb-h">⏰ Follow-ups & the Maybe Queue</div>' +
+      '<div class="pb-crm">' +
+        "<p>When you mark someone <strong>Maybe</strong>, the app sets a follow-up date for you automatically. Those leads chill in the <strong>Maybe Queue</strong> and automatically jump back into your <strong>Active</strong> list when the date hits — so nobody ever slips through the cracks. Not ready to call yet? Tap <strong>💤 Snooze</strong> to push it a few more days. Your Dashboard shows what's overdue, due today, and coming up. Work those follow-ups — that's where the easy money is. 📞</p>" +
+      "</div>" +
+
+      '<div class="pb-h">📝 Notes — use them every call</div>' +
+      '<div class="pb-crm">' +
+        "<p>Open any lead and drop a note: who you talked to, what they said, when to call back. Future-you will thank present-you. \u201COwner's name is Dave, call back Tuesday after 2\u201D beats trying to remember 40 calls later. Good notes = you sound sharp on the callback = more closes.</p>" +
+      "</div>" +
+
       '<div class="pb-h">🚀 After they say YES — the play</div>' +
       '<div class="pb-steps">' + steps + "</div>" +
       '<div class="pb-callout">🔒 <strong>The deposit rule:</strong> No $100, no site. Doesn\'t matter how nice they sound. We don\'t build for promises — we build for paying customers. Deposit first, every single time.</div>' +
+
+      '<div class="pb-h">📞 On the phone — your opener</div>' +
+      '<div class="pb-script"><p>' + esc(COLD_OPENER) + "</p></div>" +
+
+      '<div class="pb-h">🥊 Handling the "no" (objections)</div>' +
+      '<div class="pb-objs">' + objs + "</div>" +
+
       '<div class="pb-h">🙋 What customers ask (and what to say)</div>' +
       '<div class="pb-faqs">' + faqs + "</div>" +
-      '<div class="pb-h">📱 Using this app</div>' +
+
+      '<div class="pb-h">⚙️ Settings, backups & syncing</div>' +
       '<div class="pb-crm">' +
-        "<p>Every business you call goes in here as a lead. Update the status as you go: <strong>New</strong> → <strong>Active</strong> (working them) → <strong>Won</strong> (closed it!). Set follow-ups so nobody slips through. The dashboard shows your wins and what you've earned. Work the list, keep it updated, watch that earnings chart climb. 💪</p>" +
-      "</div>";
+        "<p><strong>Settings</strong> is where package prices and your commission % are set — if a number ever looks off, that's the place to check. <strong>Backups:</strong> hit the <strong>\u22EF</strong> button (top right) for the Data & Backup menu. <strong>Export data</strong> downloads every lead as a file, <strong>Create backup</strong> saves a restore point right in the browser, and <strong>Restore backup</strong> rolls you back if something goes sideways. <strong>Cloud sync</strong> runs automatically with no login — your leads follow you across devices, and it still works fine offline.</p>" +
+      "</div>" +
+
+      '<div class="pb-h">🛠️ Troubleshooting</div>' +
+      '<div class="pb-faqs">' + trouble + "</div>";
   }
 
   /* ---------- "max" chatbot ---------- */
   const MAX_TOPICS = [
     { key: "packages", label: "What are the packages?", kw: ["package", "packages", "tier", "tiers", "plan", "plans", "starter", "business", "premium", "options", "option"] },
+    { key: "recommend", label: "Which package do I pitch?", kw: ["which package", "what package", "recommend", "which one", "which tier", "what should i sell", "which should", "best package", "pitch which", "what do i sell"] },
     { key: "price", label: "How much do they cost?", kw: ["price", "prices", "cost", "costs", "how much", "pricing", "charge", "expensive", "cheap"] },
-    { key: "pay", label: "How do I get paid?", kw: ["get paid", "my cut", "commission", "my money", "how much do i make", "my pay", "earn", "payout", "my share", "percentage", "percent"] },
-    { key: "yes", label: "They said yes — now what?", kw: ["said yes", "closed", "after the yes", "now what", "next step", "what next", "they agree", "they want it", "how does this work", "how do we do this", "process", "workflow", "steps"] },
-    { key: "deposit", label: "What's the deposit rule?", kw: ["deposit", "100", "hundred", "upfront", "up front", "down payment", "venmo", "pay first", "collect"] },
+    { key: "pay", label: "How do I get paid?", kw: ["get paid", "my cut", "commission", "my money", "how much do i make", "my pay", "payout", "my share", "percentage", "percent"] },
+    { key: "coldcall", label: "What do I say on a cold call?", kw: ["cold call", "what do i say", "what should i say", "opener", "opening", "script", "intro", "how do i start", "first call", "phone call"] },
+    { key: "objections", label: "How do I handle objections?", kw: ["objection", "objections", "no", "not interested", "too busy", "already have", "think about it", "push back", "pushback", "rejection", "they say no", "talk them"] },
+    { key: "yes", label: "They said yes — now what?", kw: ["said yes", "after the yes", "now what", "next step", "what next", "they agree", "they want it", "how does this work", "how do we do this", "process", "workflow", "closed the deal"] },
+    { key: "maybe", label: "What if they say maybe?", kw: ["maybe", "call back", "call me back", "not sure", "undecided", "on the fence", "think about", "follow up later"] },
+    { key: "statuses", label: "What do the statuses mean?", kw: ["status", "statuses", "active", "closed", "archived", "archive", "won", "mark them", "mark it", "yes maybe no", "which button"] },
+    { key: "followups", label: "How do follow-ups work?", kw: ["follow up", "follow-up", "followup", "follow ups", "reminder", "snooze", "call back later", "maybe queue", "due"] },
+    { key: "deposit", label: "What's the deposit rule?", kw: ["deposit", "100", "hundred", "upfront", "up front", "down payment", "venmo", "pay first"] },
     { key: "balance", label: "When do they pay the rest?", kw: ["balance", "rest", "remainder", "final payment", "pay the rest", "second payment", "full amount", "before live", "go live"] },
-    { key: "collect", label: "What info do I collect?", kw: ["what info", "collect", "gather", "information", "what do i need", "what to ask", "details", "grab"] },
+    { key: "collect", label: "What info do I collect?", kw: ["what info", "collect", "gather", "information", "what do i need", "what to ask", "details", "grab their"] },
     { key: "time", label: "How long does it take?", kw: ["how long", "timeline", "turnaround", "when done", "how fast", "weeks", "delivery", "build time"] },
-    { key: "domain", label: "What about the domain?", kw: ["domain", "yearly", "year", "renewal", "hosting", "website name", "url", "15", "20", "annual"] },
+    { key: "domain", label: "What about the domain?", kw: ["domain", "yearly", "renewal", "hosting", "website name", "annual", "per year", "a year"] },
     { key: "refund", label: "Is the deposit refundable?", kw: ["refund", "refundable", "money back", "changes mind", "cancel", "back out", "give back"] },
-    { key: "changes", label: "Can they change stuff later?", kw: ["change", "changes", "edit", "update later", "tweak", "revise", "revision", "fix later", "after live", "maintenance"] },
-    { key: "who", label: "Who are we / what do I say?", kw: ["who are we", "who am i", "who are you", "company", "agency", "brothers", "about us", "what do we do", "pitch"] },
-    { key: "crm", label: "How do I use this app?", kw: ["use this app", "how to use", "crm", "leads", "status", "follow up", "follow-up", "dashboard", "track"] },
+    { key: "changes", label: "Can they change stuff later?", kw: ["change", "changes", "edit", "update later", "tweak", "revise", "revision", "fix later", "maintenance"] },
+    { key: "notes", label: "How do notes work?", kw: ["note", "notes", "write down", "jot", "remember the call", "log the call"] },
+    { key: "backups", label: "How do backups work?", kw: ["backup", "backups", "export", "save my leads", "safety", "lose my data", "data safe"] },
+    { key: "restore", label: "How do I get a lead back?", kw: ["restore", "deleted", "undo", "get it back", "bring back", "recover", "lost a lead", "accidentally", "find archived", "where are archived", "archived leads"] },
+    { key: "sync", label: "Does my data sync?", kw: ["sync", "cloud", "other device", "phone and computer", "another device", "login", "log in", "account", "offline"] },
+    { key: "settings", label: "How do I use Settings?", kw: ["settings", "change price", "change commission", "change the price", "edit price", "configure", "setup", "preferences"] },
+    { key: "who", label: "Who are we / what do I say?", kw: ["who are we", "who am i", "who are you", "company", "agency", "brothers", "about us", "what do we do"] },
+    { key: "crm", label: "How do I use this app?", kw: ["use this app", "how to use", "crm", "leads", "dashboard", "track", "get started", "how does the app"] },
   ];
   function maxAnswer(key) {
     const cut = (id) => money(erikCut(pkgPrice(id)));
@@ -2163,10 +2247,32 @@
         return "🔧 Small tweaks after it's live? We got 'em, mostly free.<br><br>Bigger changes down the road might cost a little — but we ALWAYS tell them before charging anything. No surprise bills.";
       case "who":
         return "Keep it real 🧢: <strong>two brothers who build websites.</strong> One handles the calls (that's you 😤), one builds the sites (that's Max).<br><br>You're not some faceless agency — you're real people who get it done. That's your edge. Use it.";
+      case "recommend":
+        return "Read what they NEED, then pitch up 🎯<br><br>• Just need to look legit + be reachable? → <strong>Starter (" + money(pkgPrice("starter")) + ")</strong><br>• Want to show off services, photos, multiple pages? → <strong>Business (" + money(pkgPrice("business")) + ")</strong> (most people land here)<br>• Want to take payments or bookings online? → <strong>Premium (" + money(pkgPrice("premium")) + ")</strong><br><br>When in doubt, pitch Business — it's the sweet spot and your cut's solid (" + cut("business") + ").";
+      case "coldcall":
+        return "Here's your opener 📞<br><br><em>\u201CHey, is this the owner? 👋 I'm Erik — I build websites for local businesses. I noticed you don't have a site (or yours is pretty dated). I can get you online in about a week for way less than you'd think. Got 30 seconds?\u201D</em><br><br>Keep it chill, get them talking. Full script + objection comebacks are in the Playbook tab.";
+      case "objections":
+        return "Don't fear the pushback — flip it 🥊<br><br><strong>\u201CI already have a site\u201D</strong> → \u201CIs it actually bringing you customers? Let me take a look.\u201D<br><br><strong>\u201CToo busy / not interested\u201D</strong> → \u201CThat's why I keep it simple — send me a couple photos, I handle the rest.\u201D (→ mark Maybe)<br><br><strong>\u201CLet me think about it\u201D</strong> → \u201CLock in today's price with the $100 deposit — if you change your mind before I start, I send it back.\u201D<br><br>The Playbook tab has the full list of comebacks.";
+      case "maybe":
+        return "\u201CMaybe\u201D is money later — don't lose it 🤔<br><br>Mark them <strong>Maybe</strong> and the app auto-sets a follow-up date. They wait in the <strong>Maybe Queue</strong> and pop back into your Active list when it's time to call again. Set the date, drop a note about what they said, and hit 'em on the callback. Follow-ups are where the easy closes live.";
+      case "statuses":
+        return "Four statuses, that's it 🎯<br><br>📞 <strong>Active</strong> — you're still working them<br>🤔 <strong>Maybe</strong> — interested, call back later (auto follow-up)<br>🏆 <strong>Closed</strong> — YES! counts your commission<br>🗄️ <strong>Archived</strong> — a no / not now (saved, not deleted)<br><br>So: <strong>Yes → Closed, Maybe → Maybe, No → Archive.</strong>";
+      case "followups":
+        return "The app's got your back ⏰<br><br>Mark someone <strong>Maybe</strong> → it auto-sets a follow-up date. When that date hits, they jump back into your <strong>Active</strong> list so you don't forget. Not ready? Tap <strong>💤 Snooze</strong> to push it a few days. Your <strong>Dashboard</strong> shows what's overdue, due today, and coming up.";
+      case "notes":
+        return "Use 'em every single call 📝<br><br>Open any lead and jot who you talked to + what they said + when to call back. \u201COwner's Dave, call back Tues after 2\u201D beats guessing 40 calls later. Good notes = you sound sharp on the callback = more closes. 💪";
+      case "backups":
+        return "Your data's safe, but back it up anyway 💾<br><br>Hit the <strong>\u22EF</strong> button (top right) → <strong>Data & Backup</strong>:<br>• <strong>Export data</strong> — download every lead as a file<br>• <strong>Create backup</strong> — save a restore point in the browser<br><br>Do it now and then. Two seconds of insurance.";
+      case "restore":
+        return "Nothing's really gone 🔄<br><br>Archived a lead by mistake? Open the <strong>Archive</strong> tab and send it back to Active.<br><br>Bigger mess? <strong>\u22EF</strong> menu → <strong>Restore backup</strong> rolls you back to your last restore point. That's why you make backups. 😉";
+      case "sync":
+        return "Yep — automatic, no login 🔄<br><br>Your leads sync to the cloud on their own and follow you across devices (phone, laptop, whatever). No account to make, nothing to set up. And if you're offline, the app still works — it catches up when you're back online.";
+      case "settings":
+        return "⚙️ <strong>Settings</strong> is where the numbers live — package <strong>prices</strong> and your <strong>commission %</strong>. If a price ever looks off in here or in the Playbook, that's where you fix it. Everything else (backups, import/export) is in the <strong>\u22EF</strong> Data & Backup menu up top.";
       case "crm":
-        return "This app is your command center 📱<br><br>Every business you call → add it as a lead. Move the status: <strong>New → Active → Won</strong>. Set follow-ups so nobody slips. The dashboard tracks your wins + earnings.<br><br>Work the list, keep it updated, watch that chart climb. 💪";
+        return "This app is your command center 📱<br><br>Every business you call → add it as a lead. Mark each call: <strong>Yes → Closed 🏆, Maybe → Maybe 🤔, No → Archive 🗄️.</strong> Set follow-ups so nobody slips. The Dashboard tracks your wins + earnings.<br><br>Work the list, keep it updated, watch that chart climb. 💪";
       default:
-        return "I got you on all things website-selling 🧢 — packages, pricing, your cut, what to do after the yes, the deposit rule, all of it. Tap a question below or just ask.";
+        return "I got you on all things website-selling 🧢 — packages, pricing, your cut, cold-call scripts, objections, the deposit rule, follow-ups, all of it. Tap a question below or just ask.";
     }
   }
   function maxMatch(text) {
@@ -2196,7 +2302,7 @@
   function renderMaxChips() {
     const wrap = $("#maxChips");
     if (!wrap) return;
-    const quick = ["packages", "pay", "yes", "deposit", "domain", "crm"];
+    const quick = ["packages", "recommend", "coldcall", "objections", "pay", "yes", "statuses", "followups"];
     wrap.innerHTML = quick.map((key) => {
       const topic = MAX_TOPICS.find((x) => x.key === key);
       return topic ? '<button type="button" class="max-chip" data-topic="' + key + '">' + esc(topic.label) + "</button>" : "";
@@ -2221,12 +2327,19 @@
     const fab = $("#maxFab");
     if (!chat || !fab) return;
     chat.classList.toggle("max-hidden", !open);
+    chat.setAttribute("aria-hidden", open ? "false" : "true");
     fab.setAttribute("aria-expanded", open ? "true" : "false");
     if (open) {
       bootMax();
       const inp = $("#maxText");
       if (inp) setTimeout(() => inp.focus(), 50);
+    } else {
+      fab.focus();
     }
+  }
+  function maxIsOpen() {
+    const chat = $("#maxChat");
+    return !!chat && !chat.classList.contains("max-hidden");
   }
 
   /* ---------- View switching ---------- */
@@ -2264,8 +2377,8 @@
   }
 
   /* ---------- Sidebar (mobile) ---------- */
-  function openSidebar() { $("#sidebar").classList.add("open"); $("#scrim").hidden = false; $("#navToggle").setAttribute("aria-expanded", "true"); }
-  function closeSidebar() { $("#sidebar").classList.remove("open"); $("#scrim").hidden = true; $("#navToggle").setAttribute("aria-expanded", "false"); }
+  function openSidebar() { $("#sidebar").classList.add("open"); $("#scrim").hidden = false; document.body.classList.add("nav-open"); $("#navToggle").setAttribute("aria-expanded", "true"); }
+  function closeSidebar() { $("#sidebar").classList.remove("open"); $("#scrim").hidden = true; document.body.classList.remove("nav-open"); $("#navToggle").setAttribute("aria-expanded", "false"); }
 
   /* ---------- Sample data ---------- */
   function loadSample() {
@@ -2287,6 +2400,7 @@
 
     if (e.key === "Escape") {
       if (closeTopModal()) return;
+      if (maxIsOpen()) { setMaxOpen(false); return; }
       if ($("#sidebar").classList.contains("open")) { closeSidebar(); return; }
       if (document.activeElement === $("#globalSearch") && $("#globalSearch").value) { $("#globalSearch").value = ""; ui.search = ""; renderAll(); }
       return;

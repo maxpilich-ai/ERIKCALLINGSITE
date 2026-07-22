@@ -9,7 +9,7 @@
   <meta name="description" content="LeadDesk CRM — a fast, offline lead management tool for commission salespeople." />
   <meta name="theme-color" content="#2563eb" />
   <title>LeadDesk CRM</title>
-  <link rel="stylesheet" href="style.css?v=11" />
+  <link rel="stylesheet" href="style.css?v=12" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📇</text></svg>" />
 </head>
 <body>
@@ -347,7 +347,7 @@
   <div class="sr-only" id="srLive" aria-live="polite"></div>
 
   <!-- ============ "max" CHATBOT ============ -->
-  <div class="max-chat max-hidden" id="maxChat" role="dialog" aria-label="Chat with max" aria-modal="false">
+  <div class="max-chat max-hidden" id="maxChat" role="dialog" aria-label="Chat with max" aria-modal="false" aria-hidden="true">
     <div class="max-head">
       <div class="max-ident">
         <span class="max-ava">🧢</span>
@@ -371,6 +371,6 @@
        pulls saved data from the shared row, and then starts the app (script.js).
        If the CDN is unreachable, cloud.js falls back to loading the app offline. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="cloud.js?v=11" defer></script>
+  <script src="cloud.js?v=12" defer></script>
 </body>
 </html>

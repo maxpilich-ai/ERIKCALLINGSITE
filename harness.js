@@ -17,6 +17,7 @@ const EXPORT = `
   hashPw,checkAdminPw,usingDefaultAdminPw,isFollowDue,processFollowUps,
   checkAdminTimeout,adminUnlock,adminLock,renderSettings,renderAll,setView,
   setStatus,snooze,archiveLead,
+  renderPlaybook,maxMatch,maxAnswer,MAX_TOPICS,setMaxOpen,maxIsOpen,maxHandle,
   copyPhone,markCalled,getLead,submitForm,save,persistNow,load,
   get leads(){return leads},set leads(v){leads=v},
   get config(){return config},set config(v){config=v},
