@@ -587,8 +587,16 @@
     };
   }
 
-  /** Minimal dependency-free canvas bar chart. */
-  function barChart(canvas, labels, values, color) {
+  /** Minimal dependency-free canvas bar chart.
+   *  opts:
+   *    emptyMax   — axis top to fall back to when every value is 0, so the
+   *                 chart still shows a real scale (e.g. $500…$2,000) instead
+   *                 of a blank card while the salesperson has no closes yet.
+   *    fmtAxis    — formatter for the y-axis labels (defaults to fmtAxisVal).
+   *    valueLabels/fmtValue — print the value on top of each non-zero bar
+   *                 (used by the earnings chart to show the exact $ earned).
+   *    wideAxis   — reserve more left room for currency labels like "$5,000". */
+  function barChart(canvas, labels, values, color, opts = {}) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
@@ -602,23 +610,28 @@
     const textCol = styles.getPropertyValue("--text-3").trim() || "#94a3b8";
     const gridCol = styles.getPropertyValue("--border").trim() || "#e4e8f0";
 
-    const padL = 44, padR = 12, padT = 12, padB = 26;
+    const padL = opts.wideAxis ? 56 : 44, padR = 12;
+    const padT = opts.valueLabels ? 22 : 12, padB = 26; // headroom for on-bar $
     const w = cssW - padL - padR, h = cssH - padT - padB;
 
     // Build a "nice" y-axis: round the top of the scale up to a clean step so
     // the labels are distinct, round numbers. Without this, an all-zero (or
-    // very small) data set produced a repeated "1, 1, 1, 0, 0" ladder.
+    // very small) data set produced a repeated "1, 1, 1, 0, 0" ladder. When
+    // there is no data at all, fall back to opts.emptyMax so the axis still
+    // shows a sensible ladder ($500, $1,000, …) rather than just "0".
     const TICKS = 4;
     const rawMax = Math.max(0, ...values);
+    const targetMax = rawMax > 0 ? rawMax : (opts.emptyMax || 0);
     let step = 0, axisMax = 0;
-    if (rawMax > 0) {
-      const rough = rawMax / TICKS;
+    if (targetMax > 0) {
+      const rough = targetMax / TICKS;
       const pow = Math.pow(10, Math.floor(Math.log10(rough)));
       const mult = [1, 2, 2.5, 5, 10].find((m) => pow * m >= rough) || 10;
       step = pow * mult;
       axisMax = step * TICKS;
     }
     const scaleMax = axisMax || 1; // bar-height denominator (never divide by 0)
+    const fmtY = opts.fmtAxis || fmtAxisVal;
 
     // y gridlines
     ctx.strokeStyle = gridCol; ctx.fillStyle = textCol;
@@ -626,17 +639,15 @@
     for (let i = 0; i <= TICKS; i++) {
       const y = padT + (h * i) / TICKS;
       ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + w, y); ctx.stroke(); ctx.globalAlpha = 1;
-      // No data → label only the baseline 0 and leave the rest blank, rather
-      // than repeating rounded fractions of 1.
       const val = step ? step * (TICKS - i) : (i === TICKS ? 0 : null);
-      if (val !== null) ctx.fillText(fmtAxisVal(val), padL - 8, y);
+      if (val !== null) ctx.fillText(fmtY(val), padL - 8, y);
     }
 
     const n = values.length || 1;
     const bw = Math.max(6, (w / n) * 0.62);
-    ctx.textAlign = "center"; ctx.textBaseline = "top";
     values.forEach((v, i) => {
-      const x = padL + (w * (i + 0.5)) / n - bw / 2;
+      const cx = padL + (w * (i + 0.5)) / n;
+      const x = cx - bw / 2;
       const bh = (v / scaleMax) * h;
       const y = padT + h - bh;
       const grad = ctx.createLinearGradient(0, y, 0, y + bh);
@@ -644,8 +655,18 @@
       ctx.fillStyle = grad;
       roundRect(ctx, x, y, bw, Math.max(bh, v > 0 ? 2 : 0), 4);
       ctx.fill();
+      // Value on top of the bar (earnings): show exactly how much was made.
+      if (opts.valueLabels && v > 0) {
+        ctx.fillStyle = color;
+        ctx.font = "600 10.5px Inter, sans-serif";
+        ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+        ctx.fillText((opts.fmtValue ? opts.fmtValue(v) : String(v)), cx, Math.max(y - 3, padT - 4));
+      }
+      // x-axis label
       if (i % Math.ceil(n / 12) === 0 || n <= 12) {
-        ctx.fillStyle = textCol; ctx.fillText(labels[i], padL + (w * (i + 0.5)) / n, padT + h + 6);
+        ctx.fillStyle = textCol; ctx.font = "11px Inter, sans-serif";
+        ctx.textAlign = "center"; ctx.textBaseline = "top";
+        ctx.fillText(labels[i], cx, padT + h + 6);
       }
     });
   }
@@ -685,7 +706,18 @@
       const bucket = weeks.find((w) => w.start.getTime() === ws);
       if (bucket) bucket.total += l.commission;
     }
-    barChart($("#earningsChart"), weeks.map((w) => w.label), weeks.map((w) => w.total), "#16a34a");
+    // Earnings chart: always show a real dollar ladder (e.g. $500 / $1,000 /
+    // $1,500 / $2,000) even before any deals close, and print the exact amount
+    // earned on top of each week's bar once money starts coming in.
+    const cur = (config && config.business && CURRENCIES[config.business.currency]) || CURRENCIES.USD;
+    const earnAxis = (val) => cur.symbol + Math.round(val).toLocaleString(cur.locale);
+    barChart($("#earningsChart"), weeks.map((w) => w.label), weeks.map((w) => w.total), "#16a34a", {
+      emptyMax: 2000,
+      wideAxis: true,
+      valueLabels: true,
+      fmtAxis: earnAxis,
+      fmtValue: (v) => money(v),
+    });
 
     // Pipeline by status
     const s = computeStats();
